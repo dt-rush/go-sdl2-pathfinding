@@ -1,110 +1,6 @@
 package main
 
-// G:			reference to the grid of cells we're pathing over
-// OH			NodeHeap ("Open Heap") used to pop off the nodes with the lowest
-//					F during search (open nodes)
-// N: 			incremented each time we calculate (used to avoid having to
-//					clear values in various arrays)
-//
-// WhichList:	2d array shadowing used to keep track of which list, open or
-//					closed, the node is on
-// From:		link to the prior node in path
-// G:	 		path cost
-// H:	 		heuristic
-// F:			G + H
-// HeapIX:		keeps track of the heap index of the element at this position
-type AstarPathComputer struct {
-	Grid *Grid
-	OH   *NodeHeap
-	N    int
-	// these 2D arrays store info about each node
-	WhichList [][]int
-	From      [][]Position
-	G         [][]int
-	H         [][]int
-	F         [][]int
-	HeapIX    [][]int
-}
-
-// special value used for the "From" of the start node
-var NOWHERE = Position{-1, -1}
-
-func NewAstarPathComputer(grid *Grid) *AstarPathComputer {
-
-	// make 2D array rows
-	// NOTE: in array-speak, the "rows" are columns. It's just nicer to put
-	// X as the first coordinate instead of Y
-	whichList := make([][]int, grid.W)
-	from := make([][]Position, grid.W)
-	g := make([][]int, grid.W)
-	h := make([][]int, grid.W)
-	f := make([][]int, grid.W)
-	heapIX := make([][]int, grid.W)
-	// make 2D array columns
-	for x := 0; x < grid.W; x++ {
-		whichList[x] = make([]int, grid.H)
-		from[x] = make([]Position, grid.H)
-		g[x] = make([]int, grid.H)
-		h[x] = make([]int, grid.H)
-		f[x] = make([]int, grid.H)
-		heapIX[x] = make([]int, grid.H)
-	}
-	// make node heap
-	pc := &AstarPathComputer{
-		Grid:      grid,
-		N:         0,
-		WhichList: whichList,
-		From:      from,
-		G:         g,
-		H:         h,
-		F:         f,
-		HeapIX:    heapIX,
-	}
-	oh := NewNodeHeap(pc)
-	pc.OH = oh
-	return pc
-}
-
-// neighbor x, y offsets
-//
-//                                       X
-//      --------------------------------->
-//     |
-//     |    -1,  1     0,  1     1,  1
-//     |
-//     |    -1,  0               1,  0
-//     |
-//     |    -1, -1     0, -1     1, -1
-//     |
-//  Y  v
-//
-//
-var ixs = [][2]int{
-	[2]int{-1, 1},
-	[2]int{0, 1},
-	[2]int{1, 1},
-	[2]int{-1, 0},
-	[2]int{1, 0},
-	[2]int{-1, -1},
-	[2]int{0, -1},
-	[2]int{1, -1},
-}
-
-// manhattan heuristic * 100 (since we use 10 and 14 for one square straight
-// or diagonal)
-func (pc *AstarPathComputer) Heuristic(p1 Position, p2 Position) int {
-	dx := p1.X - p2.X
-	if dx < 0 {
-		dx *= -1
-	}
-	dy := p1.Y - p2.Y
-	if dy < 0 {
-		dy *= -1
-	}
-	return 10 * (dx + dy)
-}
-
-func (pc *AstarPathComputer) Path(start Position, end Position) (path []Position) {
+func (pc *PathComputer) AstarPath(start Position, end Position) (path []Position) {
 	// clear the heap which contains leftover nodes from the last calculation
 	pc.OH.Clear()
 	// increment N (easier than clearing arrays)
@@ -117,7 +13,7 @@ func (pc *AstarPathComputer) Path(start Position, end Position) (path []Position
 	// store a special value for the "From" of the first node
 	pc.From[start.X][start.Y] = NOWHERE
 	pc.G[start.X][start.Y] = 0
-	pc.H[start.X][start.Y] = pc.Heuristic(start, end)
+	pc.H[start.X][start.Y] = ManhattanDistance(start, end)
 	pc.WhichList[start.X][start.Y] = pc.N
 	pc.OH.Add(start)
 	// while open heap has elements...
@@ -172,7 +68,7 @@ func (pc *AstarPathComputer) Path(start Position, end Position) (path []Position
 			}
 			// compute g, h, f for the current cell
 			g := pc.G[cur.X][cur.Y] + dist
-			h := pc.Heuristic(Position{x, y}, end)
+			h := ManhattanDistance(Position{x, y}, end)
 			// don't consider this neighbor if the neighbor is in the closed
 			// list *and* our g is greater or equal to its g score (we already
 			// have a better way to get to it)
