@@ -1,6 +1,6 @@
 package main
 
-func (pc *PathComputer) AstarPath(start Position, end Position) (path []Position) {
+func (pc *AstarPathComputer) AstarPath(start Position, end Position) (path []Position) {
 	// clear the heap which contains leftover nodes from the last calculation
 	pc.OH.Clear()
 	// increment N (easier than clearing arrays)

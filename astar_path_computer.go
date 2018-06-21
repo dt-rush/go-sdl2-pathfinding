@@ -13,7 +13,7 @@ package main
 // H:	 		heuristic
 // F:			G + H
 // HeapIX:		keeps track of the heap index of the element at this position
-type PathComputer struct {
+type AstarPathComputer struct {
 	Grid *Grid
 	OH   *NodeHeap
 	N    int
@@ -26,7 +26,7 @@ type PathComputer struct {
 	HeapIX    [][]int
 }
 
-func NewPathComputer(grid *Grid) *PathComputer {
+func NewAstarPathComputer(grid *Grid) *AstarPathComputer {
 
 	// make 2D array rows
 	// NOTE: in array-speak, the "rows" are columns. It's just nicer to put
@@ -47,7 +47,7 @@ func NewPathComputer(grid *Grid) *PathComputer {
 		heapIX[x] = make([]int, grid.H)
 	}
 	// make node heap
-	pc := &PathComputer{
+	pc := &AstarPathComputer{
 		Grid:      grid,
 		N:         0,
 		WhichList: whichList,
