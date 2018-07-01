@@ -7,11 +7,12 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"time"
+	// "time"
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	// rand.Seed(time.Now().UnixNano())
+	rand.Seed(0)
 	color.NoColor = false
 }
 
