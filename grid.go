@@ -46,7 +46,7 @@ func (m *Grid) ClearGrid() {
 			if m.Cells[x][y] == START ||
 				m.Cells[x][y] == PATH ||
 				m.Cells[x][y] == END {
-				m.Cells[x][y] = OPEN
+				m.Cells[x][y] = EMPTY
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func (m *Grid) DrawGrid() {
 			var c sdl.Color
 			kind := m.Cells[x][y]
 			switch kind {
-			case OPEN:
+			case EMPTY:
 				c = sdl.Color{R: 0, G: 0, B: 0}
 			case OBSTACLE:
 				c = sdl.Color{R: 255, G: 0, B: 0}
@@ -119,9 +119,9 @@ func (m *Grid) DrawPath() {
 	}
 }
 
-func (m *Grid) InGrid(x int, y int) bool {
-	return x >= 0 && x < GRID_CELL_DIMENSION &&
-		y >= 0 && y < GRID_CELL_DIMENSION
+func (m *Grid) InGrid(p Position) bool {
+	return p.X >= 0 && p.X < GRID_CELL_DIMENSION &&
+		p.Y >= 0 && p.Y < GRID_CELL_DIMENSION
 }
 
 func (m *Grid) CellHasObstacle(x int, y int) bool {

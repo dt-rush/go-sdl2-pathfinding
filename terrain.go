@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	OPEN     = 0
+	EMPTY    = 0
 	OBSTACLE = iota
 	START    = iota
 	PATH     = iota
@@ -22,7 +22,7 @@ var bgCyan = color.New(color.BgCyan).SprintFunc()
 
 func CellString(val int) (rep string) {
 	switch val {
-	case OPEN:
+	case EMPTY:
 		rep = bgBlack("  ")
 	case OBSTACLE:
 		rep = bgRed("  ")
@@ -41,7 +41,7 @@ func MakeTerrain(w int, h int) [][]int {
 	for x := 0; x < w; x++ {
 		t[x] = make([]int, h)
 		for y := 0; y < h; y++ {
-			t[x][y] = OPEN
+			t[x][y] = EMPTY
 		}
 	}
 	for x := 0; x < w; x++ {

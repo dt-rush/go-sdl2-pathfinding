@@ -8,11 +8,11 @@ import (
 )
 
 type NodeHeap struct {
-	PC  *PathComputer
+	PC  *DstarPathComputer
 	Arr []Position
 }
 
-func NewNodeHeap(pc *PathComputer) *NodeHeap {
+func NewNodeHeap(pc *DstarPathComputer) *NodeHeap {
 	// 0 is a nil element not considered, because it makes the
 	// array shifting math cleaner
 	h := NodeHeap{PC: pc, Arr: []Position{NOWHERE}}
@@ -20,11 +20,11 @@ func NewNodeHeap(pc *PathComputer) *NodeHeap {
 }
 
 func (h *NodeHeap) bubbleUp(ix int) int {
-	// if ix > 1 and F(ix) < F(ix>>1)
-	// (if we're not the top node and our F value is less than the parent)
+	// if ix > 1 and K(ix) < K(ix>>1)
+	// (if we're not the top node and our K value is less than the parent)
 	for ix > 1 &&
-		h.PC.F[h.Arr[ix].X][h.Arr[ix].Y] <
-			h.PC.F[h.Arr[ix>>1].X][h.Arr[ix>>1].Y] {
+		h.PC.K[h.Arr[ix].X][h.Arr[ix].Y] <
+			h.PC.K[h.Arr[ix>>1].X][h.Arr[ix>>1].Y] {
 		// swap Nodes in heap
 		h.Arr[ix], h.Arr[ix>>1] = h.Arr[ix>>1], h.Arr[ix]
 		// swap HeapIX for nodes
@@ -39,11 +39,22 @@ func (h *NodeHeap) bubbleUp(ix int) int {
 }
 
 func (h *NodeHeap) Add(p Position) (ix int) {
-	// compute F = G + H
-	h.PC.F[p.X][p.Y] = h.PC.G[p.X][p.Y] + h.PC.H[p.X][p.Y]
-	// append to array and bubble up (needs to have its HeapIX set initially)
+
+	// append to array end (will bubble up below)
 	h.Arr = append(h.Arr, p)
 	ix = len(h.Arr) - 1
+	// calculate the new K value (min of P and H)
+	var K int
+	P := h.PC.P[h.Arr[ix].X][h.Arr[ix].Y]
+	H := h.PC.H[h.Arr[ix].X][h.Arr[ix].Y]
+	if P < H {
+		K = P
+	} else {
+		K = H
+	}
+	// assign the new K value
+	h.PC.K[h.Arr[ix].X][h.Arr[ix].Y] = K
+	// bubble up (needs HeapIX set)
 	h.PC.HeapIX[p.X][p.Y] = ix
 	ix = h.bubbleUp(ix)
 	// return ix to user
@@ -63,14 +74,14 @@ func (h *NodeHeap) bubbleDown(ix int) int {
 		}
 		// if left child exists and is greater, set greater to lix
 		if lix < len(h.Arr) &&
-			h.PC.F[h.Arr[lix].X][h.Arr[lix].Y] <
-				h.PC.F[h.Arr[greater].X][h.Arr[greater].Y] {
+			h.PC.K[h.Arr[lix].X][h.Arr[lix].Y] <
+				h.PC.K[h.Arr[greater].X][h.Arr[greater].Y] {
 			greater = lix
 		}
 		// if left child exists and is greater, set greater to rix
 		if rix < len(h.Arr) &&
-			h.PC.F[h.Arr[rix].X][h.Arr[rix].Y] <
-				h.PC.F[h.Arr[greater].X][h.Arr[greater].Y] {
+			h.PC.K[h.Arr[rix].X][h.Arr[rix].Y] <
+				h.PC.K[h.Arr[greater].X][h.Arr[greater].Y] {
 			greater = rix
 		}
 		// if one of children was greater, swap and continue bubble down
@@ -108,21 +119,27 @@ func (h *NodeHeap) Pop() (Position, error) {
 	return p, nil
 }
 
-func (h *NodeHeap) Modify(ix int, G int) {
-	// get the old F value
-	oldVal := h.PC.F[h.Arr[ix].X][h.Arr[ix].Y]
+func (h *NodeHeap) Modify(ix int, H int) {
+	// get the old K value
+	oldVal := h.PC.K[h.Arr[ix].X][h.Arr[ix].Y]
 	// set the new G
-	h.PC.G[h.Arr[ix].X][h.Arr[ix].Y] = G
-	// calculate the new F value
-	F := G + h.PC.H[h.Arr[ix].X][h.Arr[ix].Y]
-	// assign the new F value
-	h.PC.F[h.Arr[ix].X][h.Arr[ix].Y] = F
+	h.PC.H[h.Arr[ix].X][h.Arr[ix].Y] = H
+	// calculate the new K value (min of P and H)
+	var K int
+	P := h.PC.P[h.Arr[ix].X][h.Arr[ix].Y]
+	if P < H {
+		K = P
+	} else {
+		K = H
+	}
+	// assign the new K value
+	h.PC.K[h.Arr[ix].X][h.Arr[ix].Y] = K
 	// bubble up if needed (setting HeapIX)
-	if F < oldVal {
+	if K < oldVal {
 		h.bubbleUp(ix)
 	}
 	// bubble down if needed
-	if F > oldVal {
+	if K > oldVal {
 		h.bubbleDown(ix)
 	}
 }
