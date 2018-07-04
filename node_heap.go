@@ -8,11 +8,11 @@ import (
 )
 
 type NodeHeap struct {
-	PC  *DstarPathComputer
+	PC  *DStarPathComputer
 	Arr []Position
 }
 
-func NewNodeHeap(pc *DstarPathComputer) *NodeHeap {
+func NewNodeHeap(pc *DStarPathComputer) *NodeHeap {
 	// 0 is a nil element not considered, because it makes the
 	// array shifting math cleaner
 	h := NodeHeap{PC: pc, Arr: []Position{NOWHERE}}

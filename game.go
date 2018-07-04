@@ -20,7 +20,7 @@ type Game struct {
 	end   *Position
 
 	// path computer
-	dpc *DstarPathComputer
+	dpc *DStarPathComputer
 
 	r *sdl.Renderer
 	f *ttf.Font
@@ -32,7 +32,7 @@ func NewGame(r *sdl.Renderer, f *ttf.Font) *Game {
 		r:    r,
 		f:    f,
 		grid: grid,
-		dpc:  NewDstarPathComputer(grid),
+		dpc:  NewDStarPathComputer(grid),
 	}
 }
 
@@ -63,11 +63,19 @@ func (g *Game) HandleMouseButtonEvents(me *sdl.MouseButtonEvent) {
 		}
 		if g.start != nil && g.end != nil {
 			g.grid.path = g.grid.path[:0]
-			path := g.dpc.DstarPath(*g.start, *g.end)
-			for i, _ := range path {
-				if i != len(path)-1 {
-					g.grid.path = append(g.grid.path,
-						PositionPair{path[i], path[i+1]})
+			pathExists := g.dpc.DStarPathInit(*g.start, *g.end)
+			if pathExists {
+				path := make([]Position, 0)
+				cur := *g.start
+				for cur != NOWHERE {
+					path = append(path, Position{cur.X, cur.Y})
+					cur = g.dpc.From[cur.X][cur.Y]
+				}
+				for i, _ := range path {
+					if i != len(path)-1 {
+						g.grid.path = append(g.grid.path,
+							PositionPair{path[i], path[i+1]})
+					}
 				}
 			}
 		}

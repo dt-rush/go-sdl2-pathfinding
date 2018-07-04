@@ -1,40 +1,34 @@
+// D* Algorithm, as described in Stentz, 1993
 package main
 
-func (pc *DstarPathComputer) DstarPath(
-	start Position, end Position) (path []Position) {
+// Initialize the path computer, calculting the path data for the various
+// grid cells, which can later be updated
+func (pc *DStarPathComputer) DStarPathInit(
+	start Position, end Position) bool {
 
+	// clear and set initial state
 	pc.Clear()
 	pc.start = start
 	pc.end = end
-
-	// Add end with H = 0
+	// Add end cell to OPEN list
 	pc.H[end.X][end.Y] = 0
 	pc.From[end.X][end.Y] = NOWHERE
 	pc.OH.Add(end)
-	// as described in Stentz, 1993:
-	// PROCESS STATE is repeatedly called until the robot's state, X, is
-	// removed from the OPEN list (ie. t(X) = CLOSED), or a value of -1 is
-	// returned, at which point either the sequence {X} has been constructed
-	// or does not exist respectively
+	// ProcessState() is repeatedly called until start is removed from the
+	// OPEN list (ie. T(start) == CLOSED), or a value of -1 is
+	// returned, at which point either the path has been constructed,
+	// or does not exist, respectively
 	kmin := 0
 	for pc.T[start.X][start.Y] != CLOSED &&
 		kmin != -1 {
 
 		kmin = pc.ProcessState()
 	}
-	if kmin == -1 {
-		path = []Position{}
-	} else {
-		cur := start
-		for cur != NOWHERE {
-			path = append(path, Position{cur.X, cur.Y})
-			cur = pc.From[cur.X][cur.Y]
-		}
-	}
-	return path
+	return kmin != -1
 }
 
-func (pc *DstarPathComputer) ProcessState() (kmin int) {
+// Used by DStarPathInit
+func (pc *DStarPathComputer) ProcessState() (kmin int) {
 	cur, err := pc.MinState()
 	if err != nil {
 		return -1
@@ -44,7 +38,7 @@ func (pc *DstarPathComputer) ProcessState() (kmin int) {
 	if cur == pc.start {
 		return kold
 	}
-	// reduce h(cur) by lowest-cost neighbor if possible
+	// reduce H(cur) by lowest-cost neighbor if possible
 	for _, ix := range ixs {
 		nbr := Position{
 			cur.X + ix[0],
@@ -58,10 +52,6 @@ func (pc *DstarPathComputer) ProcessState() (kmin int) {
 			continue
 		}
 		pathCost := pc.H[cur.X][cur.Y] + pc.C(cur, nbr)
-		// note below that we can inspect the values of (nbr.X, nbr.Y) because
-		// we check if it's on CLOSED (so old data from a prior calculation would
-		// have been overwritten by the time it's on the CLOSED list for this
-		// iteration
 		if pc.T[nbr.X][nbr.Y] == CLOSED &&
 			pc.H[nbr.X][nbr.Y] <= kold &&
 			pc.H[cur.X][cur.Y] > pathCost {
@@ -139,11 +129,11 @@ func (pc *DstarPathComputer) ProcessState() (kmin int) {
 	return pc.GetKMin()
 }
 
-func (pc *DstarPathComputer) MinState() (Position, error) {
+func (pc *DStarPathComputer) MinState() (Position, error) {
 	return pc.OH.Pop()
 }
 
-func (pc *DstarPathComputer) Insert(s Position) {
+func (pc *DStarPathComputer) Insert(s Position) {
 	wasOpenAlready := pc.T[s.X][s.Y] == OPEN
 	if wasOpenAlready {
 		pc.OH.Modify(pc.HeapIX[s.X][s.Y], pc.H[s.X][s.Y])
@@ -153,7 +143,7 @@ func (pc *DstarPathComputer) Insert(s Position) {
 	}
 }
 
-func (pc *DstarPathComputer) GetKMin() int {
+func (pc *DStarPathComputer) GetKMin() int {
 	if len(pc.OH.Arr) < 2 {
 		return -1
 	} else {
@@ -162,7 +152,7 @@ func (pc *DstarPathComputer) GetKMin() int {
 }
 
 // cost of traversing p2 -> p1
-func (pc *DstarPathComputer) C(p1, p2 Position) int {
+func (pc *DStarPathComputer) C(p1, p2 Position) int {
 	dx := p1.X - p2.X
 	dy := p1.Y - p2.Y
 	if dx*dy != 0 {

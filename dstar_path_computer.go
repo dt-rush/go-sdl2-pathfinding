@@ -11,7 +11,7 @@ const (
 //					F during search (open nodes)
 // N: 			incremented each time we calculate (used to avoid having to
 //					clear values in various arrays)
-type DstarPathComputer struct {
+type DStarPathComputer struct {
 	Grid *Grid
 	OH   *NodeHeap
 
@@ -29,7 +29,7 @@ type DstarPathComputer struct {
 	HeapIX [][]int // index in heap array
 }
 
-func NewDstarPathComputer(grid *Grid) *DstarPathComputer {
+func NewDStarPathComputer(grid *Grid) *DStarPathComputer {
 
 	// make 2D array rows
 	// NOTE: in array-speak, the "rows" are columns. It's just nicer to put
@@ -50,7 +50,7 @@ func NewDstarPathComputer(grid *Grid) *DstarPathComputer {
 		heapIX[x] = make([]int, grid.H)
 	}
 	// make node heap
-	pc := &DstarPathComputer{
+	pc := &DStarPathComputer{
 		Grid:   grid,
 		From:   from,
 		T:      t,
@@ -64,7 +64,7 @@ func NewDstarPathComputer(grid *Grid) *DstarPathComputer {
 	return pc
 }
 
-func (pc *DstarPathComputer) Clear() {
+func (pc *DStarPathComputer) Clear() {
 	pc.start = NOWHERE
 	pc.end = NOWHERE
 	pc.OH.Clear()
