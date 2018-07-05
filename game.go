@@ -17,7 +17,7 @@ const (
 type Game struct {
 	grid      *Grid
 	mode      int
-	dpc       *DStarPathComputer
+	fdpc      *FieldDStarPathComputer
 	fpsTicker *time.Ticker
 	r         *sdl.Renderer
 	f         *ttf.Font
@@ -27,7 +27,7 @@ func NewGame(r *sdl.Renderer, f *ttf.Font) *Game {
 	grid := NewGrid(r)
 	return &Game{
 		grid:      grid,
-		dpc:       NewDStarPathComputer(grid),
+		fdpc:      NewFieldDStarPathComputer(grid),
 		fpsTicker: time.NewTicker(time.Millisecond * (1000 / FPS)),
 		r:         r,
 		f:         f,
@@ -121,10 +121,10 @@ func (g *Game) HandleMouseButtonEvents(me *sdl.MouseButtonEvent) {
 	// if g.start and g.end are defined, compute the path
 	if g.grid.start != nil && g.grid.end != nil {
 		g.grid.path = g.grid.path[:0]
-		pathExists := g.dpc.DStarPathInit(*g.grid.start, *g.grid.end)
+		pathExists := g.fdpc.FieldDStarPathInit(*g.grid.start, *g.grid.end)
 		if pathExists {
 			path := make([]Position, 0)
-			cur := g.dpc.startNode
+			cur := g.fdpc.startNode
 			for cur != nil {
 				path = append(path, cur.Pos)
 				cur = cur.From

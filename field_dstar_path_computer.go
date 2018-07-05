@@ -40,7 +40,7 @@ func (n *Node) String() string {
 	return fmt.Sprintf("(%d)%v", n.K, n.Pos)
 }
 
-type DStarPathComputer struct {
+type FieldDStarPathComputer struct {
 	// basic members needed for computing a path
 	Grid      *Grid
 	OH        *NodeHeap
@@ -49,7 +49,7 @@ type DStarPathComputer struct {
 	endNode   *Node
 }
 
-func NewDStarPathComputer(grid *Grid) *DStarPathComputer {
+func NewFieldDStarPathComputer(grid *Grid) *FieldDStarPathComputer {
 	// build nodes grid
 	// NOTE: in array-speak, the "rows" are columns. It's just nicer to put
 	// X as the first coordinate instead of Y
@@ -60,7 +60,7 @@ func NewDStarPathComputer(grid *Grid) *DStarPathComputer {
 			nodes[x][y] = Node{Pos: Position{x, y}}
 		}
 	}
-	return &DStarPathComputer{
+	return &FieldDStarPathComputer{
 		Grid:  grid,
 		Nodes: nodes,
 		OH:    NewNodeHeap(),
@@ -68,7 +68,7 @@ func NewDStarPathComputer(grid *Grid) *DStarPathComputer {
 }
 
 // used to clear all state
-func (c *DStarPathComputer) Clear() {
+func (c *FieldDStarPathComputer) Clear() {
 	c.startNode = nil
 	c.endNode = nil
 	c.OH.Clear()
@@ -81,7 +81,7 @@ func (c *DStarPathComputer) Clear() {
 
 // Initialize the path computer, calculting the path data for the various
 // grid cells, which can later be updated
-func (c *DStarPathComputer) DStarPathInit(
+func (c *FieldDStarPathComputer) FieldDStarPathInit(
 	start Position, end Position) bool {
 
 	// clear state
@@ -106,8 +106,8 @@ func (c *DStarPathComputer) DStarPathInit(
 	return kmin != -1
 }
 
-// Used by DStarPathInit
-func (c *DStarPathComputer) ProcessState() (kmin int) {
+// Used by FieldDStarPathInit
+func (c *FieldDStarPathComputer) ProcessState() (kmin int) {
 	// pop min element from OPEN heap (minimizes by K, which is min of H and P)
 	cur, err := c.MinState()
 	if err != nil {
@@ -195,12 +195,12 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 }
 
 // returns the node with min K from the OPEN heap
-func (c *DStarPathComputer) MinState() (*Node, error) {
+func (c *FieldDStarPathComputer) MinState() (*Node, error) {
 	return c.OH.Pop()
 }
 
 // inserts or reinserts an element to the OPEN heap at the appropriate position
-func (c *DStarPathComputer) Insert(n *Node) {
+func (c *FieldDStarPathComputer) Insert(n *Node) {
 	n.ComputeK()
 	if n.T == OPEN {
 		c.OH.Modified(n)
@@ -210,7 +210,7 @@ func (c *DStarPathComputer) Insert(n *Node) {
 }
 
 // returns the current minimum K value on the OPEN heap
-func (c *DStarPathComputer) GetKMin() int {
+func (c *FieldDStarPathComputer) GetKMin() int {
 	if len(c.OH.Arr) < 2 {
 		return -1
 	} else {
@@ -219,7 +219,7 @@ func (c *DStarPathComputer) GetKMin() int {
 }
 
 // cost of traversing p1 -> p2
-func (c *DStarPathComputer) C(n1 *Node, n2 *Node) int {
+func (c *FieldDStarPathComputer) C(n1 *Node, n2 *Node) int {
 	dx := n1.Pos.X - n2.Pos.X
 	dy := n1.Pos.Y - n2.Pos.Y
 	if dx*dy != 0 {
