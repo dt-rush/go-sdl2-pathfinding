@@ -67,26 +67,16 @@ func (m *Grid) NbrOf(cur Position, ix [2]int) (Position, error) {
 		cur.X + ix[0],
 		cur.Y + ix[1],
 	}
-	crossCorner := (ix[0]*ix[1] != 0 &&
-		pc.Grid.Cell[cur.X][nbr.Y] == OBSTACLE ||
-		pc.Grid.Cells[nbr.X][cur.Y] == OBSTACLE)
-	if !pc.Grid.InGrid(nbr) ||
-		pc.Grid.IsObstacle(nbr) ||
-		crossCorner {
+	if !m.InGrid(nbr) ||
+		m.IsObstacle(nbr) ||
+		// excludes cells which cross an obstacle on the corner
+		(ix[0]*ix[1] != 0 &&
+			m.Cells[cur.X][nbr.Y] == OBSTACLE ||
+			m.Cells[nbr.X][cur.Y] == OBSTACLE) {
 		return NOWHERE, errors.New("invalid neighbor")
 	} else {
 		return nbr, nil
 	}
-}
-
-func (m *Grid) SetPath(path []Position) {
-	for _, p := range path {
-		val := m.Cells[p.X][p.Y]
-		if val != START && val != END {
-			m.Cells[p.X][p.Y] = PATH
-		}
-	}
-
 }
 
 func (m *Grid) SetStart(start Position) {
@@ -135,37 +125,14 @@ func (m *Grid) DrawGrid() {
 	}
 }
 
+// draws the path to the screen texture
 func (m *Grid) DrawPath() {
 	for _, pp := range m.path {
-		p1 := m.ToWorldSpace(pp.p1)
-		p2 := m.ToWorldSpace(pp.p2)
+		p1 := GridCellSpaceToGridWorldSpace(pp.p1)
+		p2 := GridCellSpaceToGridWorldSpace(pp.p2)
 		drawVector(m.r,
 			p1,
 			p2.Sub(p1),
 			sdl.Color{R: 255, G: 255, B: 255})
 	}
-}
-
-func (m *Grid) ToWorldSpace(p Position) Vec2D {
-	return Vec2D{
-		float64(p.X*GRIDCELL_WORLD_W + GRIDCELL_WORLD_W/2),
-		float64(p.Y*GRIDCELL_WORLD_H + GRIDCELL_WORLD_H/2)}
-}
-
-func (m *Grid) ToGridSpace(p Vec2D) Position {
-	x := int(p.X / GRIDCELL_WORLD_W)
-	y := int(p.Y / GRIDCELL_WORLD_H)
-	if x > GRID_CELL_DIMENSION-1 {
-		x = GRID_CELL_DIMENSION - 1
-	}
-	if x < 0 {
-		x = 0
-	}
-	if y > GRID_CELL_DIMENSION-1 {
-		y = GRID_CELL_DIMENSION - 1
-	}
-	if y < 0 {
-		y = 0
-	}
-	return Position{x, y}
 }

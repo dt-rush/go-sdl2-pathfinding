@@ -24,7 +24,7 @@ func (h *NodeHeap) Add(n *Node) (ix int) {
 	h.Arr = append(h.Arr, n)
 	ix = len(h.Arr) - 1
 	// bubble up (needs HeapIX set)
-	n.heapIX = ix
+	n.HeapIX = ix
 	ix = h.bubbleUp(ix)
 	// return ix to user
 	return ix
@@ -37,8 +37,8 @@ func (h *NodeHeap) bubbleUp(ix int) int {
 		// swap Nodes in heap
 		h.Arr[ix], h.Arr[ix>>1] = h.Arr[ix>>1], h.Arr[ix]
 		// swap HeapIX for nodes
-		h.Arr[ix].heapIX, h.Arr[ix>>1].heapIX =
-			h.Arr[ix>>1].heapIX, h.Arr[ix].heapIX
+		h.Arr[ix].HeapIX, h.Arr[ix>>1].HeapIX =
+			h.Arr[ix>>1].HeapIX, h.Arr[ix].HeapIX
 		// set ix for next iter to be the ix we just swapped to
 		ix = ix >> 1
 	}
@@ -70,8 +70,8 @@ func (h *NodeHeap) bubbleDown(ix int) int {
 			// swap Nodes in heap
 			h.Arr[ix], h.Arr[lesser] = h.Arr[lesser], h.Arr[ix]
 			// swap HeapIX for nodes
-			h.Arr[ix].heapIX, h.Arr[lesser].heapIX =
-				h.Arr[lesser].heapIX, h.Arr[ix].heapIX
+			h.Arr[ix].HeapIX, h.Arr[lesser].HeapIX =
+				h.Arr[lesser].HeapIX, h.Arr[ix].HeapIX
 			// continue to bubble down
 			ix = lesser
 			continue
@@ -92,7 +92,7 @@ func (h *NodeHeap) Pop() (*Node, error) {
 	// bring last element to root, bubble new root node down if
 	// needed, before return
 	h.Arr[1] = h.Arr[last_ix]
-	h.Arr[1].heapIX = 1
+	h.Arr[1].HeapIX = 1
 	h.Arr = h.Arr[:last_ix]
 	h.bubbleDown(1)
 	return n, nil
@@ -100,22 +100,22 @@ func (h *NodeHeap) Pop() (*Node, error) {
 
 func (h *NodeHeap) Modified(n *Node) {
 	// if less than parent, bubble up
-	parentIX := n.heapIX >> 1
+	parentIX := n.HeapIX >> 1
 	if parentIX > 0 {
 		parent := h.Arr[parentIX]
 		if n.K < parent.K {
-			h.bubbleUp(n.heapIX)
+			h.bubbleUp(n.HeapIX)
 			return
 		}
 	}
 	// if greater than either child, bubble down
-	lix := (n.heapIX << 1)
-	rix := (n.heapIX << 1) + 1
+	lix := (n.HeapIX << 1)
+	rix := (n.HeapIX << 1) + 1
 	for _, ix := range []int{lix, rix} {
-		if ix < len(n.Arr) {
+		if ix < len(h.Arr) {
 			child := h.Arr[ix]
 			if n.K > child.K {
-				h.bubbleDown(n.heapIX)
+				h.bubbleDown(n.HeapIX)
 				return
 			}
 		}

@@ -15,6 +15,7 @@ const (
 	CLOSED = iota
 )
 
+// Used to associate data with a grid cell during computation
 type Node struct {
 	Pos    Position // position in grid
 	From   *Node    // "backpointer"
@@ -25,7 +26,7 @@ type Node struct {
 	HeapIX int      // index in heap array
 }
 
-// K = min (P, H)
+// set's the node's K = min (P, H)
 func (n *Node) ComputeK() {
 	if n.P < n.H {
 		n.K = n.P
@@ -34,22 +35,22 @@ func (n *Node) ComputeK() {
 	}
 }
 
-// for pretty printing
+// Prints in format (k)[x, y]
 func (n *Node) String() string {
-	return fmt.Sprintf("%v(%d)", n.Pos, n.K)
+	return fmt.Sprintf("(%d)%v", n.K, n.Pos)
 }
 
 type DStarPathComputer struct {
 	// basic members needed for computing a path
-	Grid  *Grid
-	OH    *NodeHeap
-	Nodes [][]Node
-	start Position
-	end   Position
+	Grid      *Grid
+	OH        *NodeHeap
+	Nodes     [][]Node
+	startNode *Node
+	endNode   *Node
 }
 
 func NewDStarPathComputer(grid *Grid) *DStarPathComputer {
-	// make 2D array rows
+	// build nodes grid
 	// NOTE: in array-speak, the "rows" are columns. It's just nicer to put
 	// X as the first coordinate instead of Y
 	nodes := make([][]Node, grid.W)
@@ -59,19 +60,17 @@ func NewDStarPathComputer(grid *Grid) *DStarPathComputer {
 			nodes[x][y] = Node{Pos: Position{x, y}}
 		}
 	}
-	// make node heap
-	c := &DStarPathComputer{
+	return &DStarPathComputer{
 		Grid:  grid,
 		Nodes: nodes,
 		OH:    NewNodeHeap(),
 	}
-	return c
 }
 
 // used to clear all state
 func (c *DStarPathComputer) Clear() {
-	c.start = NOWHERE
-	c.end = NOWHERE
+	c.startNode = nil
+	c.endNode = nil
 	c.OH.Clear()
 	for x := 0; x < c.Grid.W; x++ {
 		for y := 0; y < c.Grid.H; y++ {
@@ -85,22 +84,20 @@ func (c *DStarPathComputer) Clear() {
 func (c *DStarPathComputer) DStarPathInit(
 	start Position, end Position) bool {
 
-	// clear and set initial state
+	// clear state
 	c.Clear()
-	c.start = start
-	c.end = end
 	// Add end cell to OPEN list
-	endNode := &c.Nodes[end.X][end.Y]
-	endNode.H = 0
-	endNode.From = nil
-	c.OH.Add(endNode)
+	c.endNode = &c.Nodes[end.X][end.Y]
+	c.endNode.H = 0
+	c.endNode.From = nil
+	c.OH.Add(c.endNode)
 	// ProcessState() is repeatedly called until start is removed from the
 	// OPEN list (ie. T(start) == CLOSED), or a value of -1 is
 	// returned, at which point either the path has been constructed,
 	// or does not exist, respectively
-	startNode := &c.Nodes[start.X][start.Y]
+	c.startNode = &c.Nodes[start.X][start.Y]
 	kmin := 0
-	for startNode.T != CLOSED && kmin != -1 {
+	for c.startNode.T != CLOSED && kmin != -1 {
 		kmin = c.ProcessState()
 	}
 	return kmin != -1
@@ -115,15 +112,16 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 	}
 	kOld := cur.K
 	cur.T = CLOSED
-	if cur == c.start {
+	if cur == c.startNode {
 		return kOld
 	}
 	// reduce H(cur) by lowest-cost neighbor if possible
 	for _, ix := range ixs {
-		nbr, err := c.Grid.NbrOf(cur, ix)
+		nbrPos, err := c.Grid.NbrOf(cur.Pos, ix)
 		if err != nil {
 			continue
 		}
+		nbr := &c.Nodes[nbrPos.X][nbrPos.Y]
 		pathCost := cur.H + c.C(cur, nbr)
 		if nbr.T == CLOSED &&
 			nbr.H <= kOld &&
@@ -135,17 +133,11 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 	}
 	// process each neighbor
 	for _, ix := range ixs {
-		nbr := Position{
-			cur.X + ix[0],
-			cur.Y + ix[1],
-		}
-		if !c.Grid.InGrid(nbr) ||
-			c.Grid.Cells[nbr.X][nbr.Y] == OBSTACLE ||
-			(ix[0]*ix[1] != 0 &&
-				c.Grid.Cells[cur.X][nbr.Y] == OBSTACLE ||
-				c.Grid.Cells[nbr.X][cur.Y] == OBSTACLE) {
+		nbrPos, err := c.Grid.NbrOf(cur.Pos, ix)
+		if err != nil {
 			continue
 		}
+		nbr := &c.Nodes[nbrPos.X][nbrPos.Y]
 		pathCost := cur.H + c.C(cur, nbr)
 
 		if nbr.T == NEW {
@@ -156,8 +148,7 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 			c.Insert(nbr)
 		} else {
 			// propagate cost change along backpointer
-			if nbr.From == cur &&
-				nbr.H != pathCost {
+			if nbr.From == cur && nbr.H != pathCost {
 				if nbr.T == OPEN {
 					if nbr.H < nbr.P {
 						nbr.P = nbr.H
@@ -170,9 +161,7 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 				c.Insert(nbr)
 			} else {
 				// reduce cost of neighbor if possible
-				if nbr.From != cur &&
-					nbr.H > pathCost {
-
+				if nbr.From != cur && nbr.H > pathCost {
 					if cur.P >= cur.H {
 						nbr.From = cur
 						nbr.H = pathCost
@@ -202,10 +191,12 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 	return c.GetKMin()
 }
 
+// returns the node with min K from the OPEN heap
 func (c *DStarPathComputer) MinState() (*Node, error) {
 	return c.OH.Pop()
 }
 
+// inserts or reinserts an element to the OPEN heap at the appropriate position
 func (c *DStarPathComputer) Insert(n *Node) {
 	n.ComputeK()
 	if n.T == OPEN {
@@ -215,6 +206,7 @@ func (c *DStarPathComputer) Insert(n *Node) {
 	}
 }
 
+// returns the current minimum K value on the OPEN heap
 func (c *DStarPathComputer) GetKMin() int {
 	if len(c.OH.Arr) < 2 {
 		return -1
@@ -223,32 +215,13 @@ func (c *DStarPathComputer) GetKMin() int {
 	}
 }
 
-// cost of traversing p2 -> p1
-func (c *DStarPathComputer) C(p1, p2 Position) int {
-	dx := p1.X - p2.X
-	dy := p1.Y - p2.Y
+// cost of traversing p1 -> p2
+func (c *DStarPathComputer) C(n1 *Node, n2 *Node) int {
+	dx := n1.Pos.X - n2.Pos.X
+	dy := n1.Pos.Y - n2.Pos.Y
 	if dx*dy != 0 {
 		return 14
 	} else {
 		return 10
 	}
-}
-
-func (c *DStarPathComputer) From(p Position) *Position {
-	return &c.from[p.X][p.Y]
-}
-func (c *DStarPathComputer) T(p Position) *int {
-	return &c.t[p.X][p.Y]
-}
-func (c *DStarPathComputer) P(p Position) *int {
-	return &c.p[p.X][p.Y]
-}
-func (c *DStarPathComputer) H(p Position) *int {
-	return &c.h[p.X][p.Y]
-}
-func (c *DStarPathComputer) K(p Position) *int {
-	return &c.k[p.X][p.Y]
-}
-func (c *DStarPathComputer) HeapIX(p Position) *int {
-	return &c.heapIX[p.X][p.Y]
 }

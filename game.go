@@ -106,21 +106,19 @@ func (g *Game) HandleKeyEvents(e sdl.Event) {
 
 // handle mouse input
 func (g *Game) HandleMouseButtonEvents(me *sdl.MouseButtonEvent) {
-	p := MouseButtonEventToVec2D(me)
+	p := MouseButtonEventToGridCellPosition(me)
 	if me.Type != sdl.MOUSEBUTTONDOWN {
 		return
 	}
-	// convert the mouse click to game world space
-	pos := g.grid.ToGridSpace(p)
 	// place either start or end
 	if g.mode == MODE_PLACING_START {
 		// if placing start, clear any prior grid data
 		g.grid.ClearGrid()
-		g.start = &pos
+		g.start = &p
 		g.grid.SetStart(*g.start)
 		g.end = nil
 	} else {
-		g.end = &pos
+		g.end = &p
 		g.grid.SetEnd(*g.end)
 	}
 	// mode is toggled between start/end whenever a click event is processed
@@ -131,10 +129,10 @@ func (g *Game) HandleMouseButtonEvents(me *sdl.MouseButtonEvent) {
 		pathExists := g.dpc.DStarPathInit(*g.start, *g.end)
 		if pathExists {
 			path := make([]Position, 0)
-			cur := *g.start
-			for cur != NOWHERE {
-				path = append(path, Position{cur.X, cur.Y})
-				cur = g.dpc.From[cur.X][cur.Y]
+			cur := g.dpc.startNode
+			for cur != nil {
+				path = append(path, cur.Pos)
+				cur = cur.From
 			}
 			for i, _ := range path {
 				if i != len(path)-1 {
