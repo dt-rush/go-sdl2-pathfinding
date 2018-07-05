@@ -90,12 +90,14 @@ func (c *DStarPathComputer) DStarPathInit(
 	c.endNode = &c.Nodes[end.X][end.Y]
 	c.endNode.H = 0
 	c.endNode.From = nil
+	c.Grid.end = &c.endNode.Pos
 	c.OH.Add(c.endNode)
 	// ProcessState() is repeatedly called until start is removed from the
 	// OPEN list (ie. T(start) == CLOSED), or a value of -1 is
 	// returned, at which point either the path has been constructed,
 	// or does not exist, respectively
 	c.startNode = &c.Nodes[start.X][start.Y]
+	c.Grid.start = &c.startNode.Pos
 	kmin := 0
 	for c.startNode.T != CLOSED && kmin != -1 {
 		kmin = c.ProcessState()
@@ -116,7 +118,7 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 		return kOld
 	}
 	// reduce H(cur) by lowest-cost neighbor if possible
-	for _, ix := range ixs {
+	for _, ix := range deltas {
 		nbrPos, err := c.Grid.NbrOf(cur.Pos, ix)
 		if err != nil {
 			continue
@@ -132,7 +134,7 @@ func (c *DStarPathComputer) ProcessState() (kmin int) {
 		}
 	}
 	// process each neighbor
-	for _, ix := range ixs {
+	for _, ix := range deltas {
 		nbrPos, err := c.Grid.NbrOf(cur.Pos, ix)
 		if err != nil {
 			continue

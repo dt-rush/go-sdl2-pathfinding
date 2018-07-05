@@ -7,6 +7,7 @@ import (
 	"github.com/disiqueira/gotree"
 )
 
+// balanced binary heap of Nodes sorted by K
 type NodeHeap struct {
 	Arr []*Node
 }
