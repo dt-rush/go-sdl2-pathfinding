@@ -86,18 +86,19 @@ func (c *DStarPathComputer) DStarPathInit(
 
 	// clear state
 	c.Clear()
-	// Add end cell to OPEN list
+	// Add end cell to OPEN heap
 	c.endNode = &c.Nodes[end.X][end.Y]
-	c.endNode.H = 0
-	c.endNode.From = nil
-	c.Grid.end = &c.endNode.Pos
+	*c.endNode = Node{
+		Pos:  c.endNode.Pos,
+		From: nil,
+		H:    0,
+	}
 	c.OH.Add(c.endNode)
 	// ProcessState() is repeatedly called until start is removed from the
 	// OPEN list (ie. T(start) == CLOSED), or a value of -1 is
 	// returned, at which point either the path has been constructed,
 	// or does not exist, respectively
 	c.startNode = &c.Nodes[start.X][start.Y]
-	c.Grid.start = &c.startNode.Pos
 	kmin := 0
 	for c.startNode.T != CLOSED && kmin != -1 {
 		kmin = c.ProcessState()

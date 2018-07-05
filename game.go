@@ -17,8 +17,6 @@ const (
 type Game struct {
 	grid      *Grid
 	mode      int
-	start     *Position
-	end       *Position
 	dpc       *DStarPathComputer
 	fpsTicker *time.Ticker
 	r         *sdl.Renderer
@@ -113,20 +111,17 @@ func (g *Game) HandleMouseButtonEvents(me *sdl.MouseButtonEvent) {
 	// place either start or end
 	if g.mode == MODE_PLACING_START {
 		// if placing start, clear any prior grid data
-		g.grid.ClearGrid()
-		g.start = &p
-		g.grid.SetStart(*g.start)
-		g.end = nil
+		g.grid.Clear()
+		g.grid.SetStart(p)
 	} else {
-		g.end = &p
-		g.grid.SetEnd(*g.end)
+		g.grid.SetEnd(p)
 	}
 	// mode is toggled between start/end whenever a click event is processed
 	g.mode = (g.mode + 1) % 2
 	// if g.start and g.end are defined, compute the path
-	if g.start != nil && g.end != nil {
+	if g.grid.start != nil && g.grid.end != nil {
 		g.grid.path = g.grid.path[:0]
-		pathExists := g.dpc.DStarPathInit(*g.start, *g.end)
+		pathExists := g.dpc.DStarPathInit(*g.grid.start, *g.grid.end)
 		if pathExists {
 			path := make([]Position, 0)
 			cur := g.dpc.startNode

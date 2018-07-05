@@ -65,70 +65,75 @@ func NewGrid(r *sdl.Renderer) *Grid {
 }
 
 // delete the saved path, start, and end data
-func (m *Grid) ClearGrid() {
-	m.path = m.path[:0]
-	if m.start != nil {
-		m.Cells[m.start.X][m.start.Y] = EMPTY
+func (g *Grid) Clear() {
+	g.path = g.path[:0]
+	if g.start != nil {
+		g.Cells[g.start.X][g.start.Y] = EMPTY
+		g.start = nil
 	}
-	if m.end != nil {
-		m.Cells[m.end.X][m.end.Y] = EMPTY
+	if g.end != nil {
+		g.Cells[g.end.X][g.end.Y] = EMPTY
+		g.end = nil
 	}
 }
 
 // tests if a position is in the grid bounds
-func (m *Grid) InGrid(p Position) bool {
+func (g *Grid) InGrid(p Position) bool {
 	return p.X >= 0 && p.X < GRID_CELL_DIMENSION &&
 		p.Y >= 0 && p.Y < GRID_CELL_DIMENSION
 }
 
 // tests if a position contains an obstacle
-func (m *Grid) IsObstacle(p Position) bool {
-	return m.Cells[p.X][p.Y] == OBSTACLE
+func (g *Grid) IsObstacle(p Position) bool {
+	return g.Cells[p.X][p.Y] == OBSTACLE
 }
 
 // returns the neighbor position given an offset 'delta' or error if not a valid
 // neighbor (returns error on cross-corners)
-func (m *Grid) NbrOf(cur Position, delta [2]int) (Position, error) {
+func (g *Grid) NbrOf(cur Position, delta [2]int) (
+	pos Position, err error) {
 	nbr := Position{
 		cur.X + delta[0],
 		cur.Y + delta[1],
 	}
-	if !m.InGrid(nbr) ||
-		m.IsObstacle(nbr) ||
+	if !g.InGrid(nbr) ||
+		g.IsObstacle(nbr) ||
 		// excludes cells which cross an obstacle on the corner
 		(delta[0]*delta[1] != 0 &&
-			m.Cells[cur.X][nbr.Y] == OBSTACLE ||
-			m.Cells[nbr.X][cur.Y] == OBSTACLE) {
+			g.Cells[cur.X][nbr.Y] == OBSTACLE ||
+			g.Cells[nbr.X][cur.Y] == OBSTACLE) {
 		return NOWHERE, errors.New("invalid neighbor")
 	} else {
 		return nbr, nil
 	}
 }
 
-func (m *Grid) SetStart(start Position) {
-	m.Cells[start.X][start.Y] = START
+func (g *Grid) SetStart(start Position) {
+	g.start = &start
+	g.Cells[start.X][start.Y] = START
 }
 
-func (m *Grid) SetEnd(end Position) {
-	m.Cells[end.X][end.Y] = END
+func (g *Grid) SetEnd(end Position) {
+	g.end = &end
+	g.Cells[end.X][end.Y] = END
 }
 
 // redraw the texture according to current state
-func (m *Grid) UpdateTexture() {
-	m.r.SetRenderTarget(m.st)
-	defer m.r.SetRenderTarget(nil)
-	m.r.SetDrawColor(0, 0, 0, 0)
-	m.r.Clear()
-	m.DrawGrid()
-	m.DrawPath()
+func (g *Grid) UpdateTexture() {
+	g.r.SetRenderTarget(g.st)
+	defer g.r.SetRenderTarget(nil)
+	g.r.SetDrawColor(0, 0, 0, 0)
+	g.r.Clear()
+	g.DrawGrid()
+	g.DrawPath()
 }
 
 // draw the grid cells (EMPTY, OBSTACLE, START, END) to `st`
-func (m *Grid) DrawGrid() {
+func (g *Grid) DrawGrid() {
 	for x := 0; x < GRID_CELL_DIMENSION; x++ {
 		for y := 0; y < GRID_CELL_DIMENSION; y++ {
 			var c sdl.Color
-			kind := m.Cells[x][y]
+			kind := g.Cells[x][y]
 			switch kind {
 			case EMPTY:
 				c = sdl.Color{R: 0, G: 0, B: 0}
@@ -140,7 +145,7 @@ func (m *Grid) DrawGrid() {
 				c = sdl.Color{R: 0, G: 255, B: 255}
 			}
 
-			drawRect(m.r,
+			drawRect(g.r,
 				Rect2D{
 					float64(x * GRIDCELL_WORLD_W),
 					float64(y * GRIDCELL_WORLD_H),
@@ -152,11 +157,11 @@ func (m *Grid) DrawGrid() {
 }
 
 // draw the path to `st`
-func (m *Grid) DrawPath() {
-	for _, pp := range m.path {
+func (g *Grid) DrawPath() {
+	for _, pp := range g.path {
 		p1 := GridCellSpaceToGridWorldSpace(pp.p1)
 		p2 := GridCellSpaceToGridWorldSpace(pp.p2)
-		drawVector(m.r,
+		drawVector(g.r,
 			p1,
 			p2.Sub(p1),
 			sdl.Color{R: 255, G: 255, B: 255})
