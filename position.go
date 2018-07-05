@@ -1,3 +1,4 @@
+// simple struct used to keep track of x, y positions in the grid
 package main
 
 import (

@@ -1,3 +1,4 @@
+// simple 2d geometry class
 package main
 
 import (

@@ -16,7 +16,7 @@ func CenteredSquare(p Vec2D, r float64) Rect2D {
 func (r Rect2D) ToScreenSpaceSdlRect() sdl.Rect {
 	// set the corner to top-left instead of bottom-left
 	r.Y += r.H
-	x, y := GRIDSpaceToScreenSpace(Vec2D{r.X, r.Y})
+	x, y := GridWorldSpaceToScreenSpace(Vec2D{r.X, r.Y})
 	w := WINDOW_WIDTH * (r.W / float64(GRID_WORLD_DIMENSION))
 	h := WINDOW_WIDTH * (r.H / float64(GRID_WORLD_DIMENSION))
 	return sdl.Rect{int32(x), int32(y), int32(w), int32(h)}
