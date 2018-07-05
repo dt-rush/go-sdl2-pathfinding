@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -49,6 +50,32 @@ func (m *Grid) ClearGrid() {
 				m.Cells[x][y] = EMPTY
 			}
 		}
+	}
+}
+
+func (m *Grid) InGrid(p Position) bool {
+	return p.X >= 0 && p.X < GRID_CELL_DIMENSION &&
+		p.Y >= 0 && p.Y < GRID_CELL_DIMENSION
+}
+
+func (m *Grid) IsObstacle(p Position) bool {
+	return m.Cells[p.X][p.Y] == OBSTACLE
+}
+
+func (m *Grid) NbrOf(cur Position, ix [2]int) (Position, error) {
+	nbr := Position{
+		cur.X + ix[0],
+		cur.Y + ix[1],
+	}
+	crossCorner := (ix[0]*ix[1] != 0 &&
+		pc.Grid.Cell[cur.X][nbr.Y] == OBSTACLE ||
+		pc.Grid.Cells[nbr.X][cur.Y] == OBSTACLE)
+	if !pc.Grid.InGrid(nbr) ||
+		pc.Grid.IsObstacle(nbr) ||
+		crossCorner {
+		return NOWHERE, errors.New("invalid neighbor")
+	} else {
+		return nbr, nil
 	}
 }
 
@@ -117,15 +144,6 @@ func (m *Grid) DrawPath() {
 			p2.Sub(p1),
 			sdl.Color{R: 255, G: 255, B: 255})
 	}
-}
-
-func (m *Grid) InGrid(p Position) bool {
-	return p.X >= 0 && p.X < GRID_CELL_DIMENSION &&
-		p.Y >= 0 && p.Y < GRID_CELL_DIMENSION
-}
-
-func (m *Grid) CellHasObstacle(x int, y int) bool {
-	return m.Cells[x][y] == OBSTACLE
 }
 
 func (m *Grid) ToWorldSpace(p Position) Vec2D {

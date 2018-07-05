@@ -8,63 +8,47 @@ import (
 )
 
 type NodeHeap struct {
-	PC  *DStarPathComputer
-	Arr []Position
+	Arr []*Node
 }
 
-func NewNodeHeap(pc *DStarPathComputer) *NodeHeap {
+func NewNodeHeap() *NodeHeap {
 	// 0 is a nil element not considered, because it makes the
 	// array shifting math cleaner
-	h := NodeHeap{PC: pc, Arr: []Position{NOWHERE}}
-	return &h
+	return &NodeHeap{Arr: []*Node{nil}}
+}
+
+func (h *NodeHeap) Add(n *Node) (ix int) {
+	// set tag of node to OPEN
+	n.T = OPEN
+	// append to array end (will bubble up below)
+	h.Arr = append(h.Arr, n)
+	ix = len(h.Arr) - 1
+	// bubble up (needs HeapIX set)
+	n.heapIX = ix
+	ix = h.bubbleUp(ix)
+	// return ix to user
+	return ix
 }
 
 func (h *NodeHeap) bubbleUp(ix int) int {
 	// if ix > 1 and K(ix) < K(ix>>1)
 	// (if we're not the top node and our K value is less than the parent)
-	for ix > 1 &&
-		h.PC.K[h.Arr[ix].X][h.Arr[ix].Y] <
-			h.PC.K[h.Arr[ix>>1].X][h.Arr[ix>>1].Y] {
+	for ix > 1 && h.Arr[ix].K < h.Arr[ix>>1].K {
 		// swap Nodes in heap
 		h.Arr[ix], h.Arr[ix>>1] = h.Arr[ix>>1], h.Arr[ix]
 		// swap HeapIX for nodes
-		h.PC.HeapIX[h.Arr[ix].X][h.Arr[ix].Y],
-			h.PC.HeapIX[h.Arr[ix>>1].X][h.Arr[ix>>1].Y] =
-			h.PC.HeapIX[h.Arr[ix>>1].X][h.Arr[ix>>1].Y],
-			h.PC.HeapIX[h.Arr[ix].X][h.Arr[ix].Y]
+		h.Arr[ix].heapIX, h.Arr[ix>>1].heapIX =
+			h.Arr[ix>>1].heapIX, h.Arr[ix].heapIX
 		// set ix for next iter to be the ix we just swapped to
 		ix = ix >> 1
 	}
 	return ix
 }
 
-func (h *NodeHeap) Add(p Position) (ix int) {
-
-	// append to array end (will bubble up below)
-	h.Arr = append(h.Arr, p)
-	ix = len(h.Arr) - 1
-	// calculate the new K value (min of P and H)
-	var K int
-	P := h.PC.P[h.Arr[ix].X][h.Arr[ix].Y]
-	H := h.PC.H[h.Arr[ix].X][h.Arr[ix].Y]
-	if P < H {
-		K = P
-	} else {
-		K = H
-	}
-	// assign the new K value
-	h.PC.K[h.Arr[ix].X][h.Arr[ix].Y] = K
-	// bubble up (needs HeapIX set)
-	h.PC.HeapIX[p.X][p.Y] = ix
-	ix = h.bubbleUp(ix)
-	// return ix to user
-	return ix
-}
-
 func (h *NodeHeap) bubbleDown(ix int) int {
 	for {
-		// beginning state: greater node is the one we're on
-		greater := ix
+		// beginning state: lesser node is the one we're on
+		lesser := ix
 		// l index, r index
 		lix := (ix << 1)
 		rix := (ix << 1) + 1
@@ -72,75 +56,69 @@ func (h *NodeHeap) bubbleDown(ix int) int {
 		if !(lix < len(h.Arr) || rix < len(h.Arr)) {
 			return ix
 		}
-		// if left child exists and is greater, set greater to lix
-		if lix < len(h.Arr) &&
-			h.PC.K[h.Arr[lix].X][h.Arr[lix].Y] <
-				h.PC.K[h.Arr[greater].X][h.Arr[greater].Y] {
-			greater = lix
+		// if left child exists and is lesser, set lesser to lix
+		if lix < len(h.Arr) && h.Arr[lix].K < h.Arr[lesser].K {
+			lesser = lix
 		}
-		// if left child exists and is greater, set greater to rix
-		if rix < len(h.Arr) &&
-			h.PC.K[h.Arr[rix].X][h.Arr[rix].Y] <
-				h.PC.K[h.Arr[greater].X][h.Arr[greater].Y] {
-			greater = rix
+		// if left child exists and is lesser, set lesser to rix
+		if rix < len(h.Arr) && h.Arr[rix].K < h.Arr[lesser].K {
+			lesser = rix
 		}
-		// if one of children was greater, swap and continue bubble down
+		// if one of children was lesser, swap and continue bubble down
 		// from that node
-		if greater != ix {
+		if lesser != ix {
 			// swap Nodes in heap
-			h.Arr[ix], h.Arr[greater] = h.Arr[greater], h.Arr[ix]
+			h.Arr[ix], h.Arr[lesser] = h.Arr[lesser], h.Arr[ix]
 			// swap HeapIX for nodes
-			h.PC.HeapIX[h.Arr[ix].X][h.Arr[ix].Y],
-				h.PC.HeapIX[h.Arr[greater].X][h.Arr[greater].Y] =
-				h.PC.HeapIX[h.Arr[greater].X][h.Arr[greater].Y],
-				h.PC.HeapIX[h.Arr[ix].X][h.Arr[ix].Y]
+			h.Arr[ix].heapIX, h.Arr[lesser].heapIX =
+				h.Arr[lesser].heapIX, h.Arr[ix].heapIX
 			// continue to bubble down
-			ix = greater
+			ix = lesser
 			continue
 		} else {
-			// else, no child was greater. we can stop here
+			// else, no child was lesser. we can stop here
 			return ix
 		}
 	}
 }
 
-func (h *NodeHeap) Pop() (Position, error) {
+func (h *NodeHeap) Pop() (*Node, error) {
 	if h.Len() == 0 {
-		return Position{}, errors.New("heap empty")
+		return nil, errors.New("heap empty")
 	}
-	// get root elem and replace with last element (shrink slice)
-	p := h.Arr[1]
+	// get root elem and replace with last element
+	n := h.Arr[1]
 	last_ix := len(h.Arr) - 1
+	// bring last element to root, bubble new root node down if
+	// needed, before return
 	h.Arr[1] = h.Arr[last_ix]
-	h.PC.HeapIX[h.Arr[1].X][h.Arr[1].Y] = 1
+	h.Arr[1].heapIX = 1
 	h.Arr = h.Arr[:last_ix]
-	// bubble element down to its place
 	h.bubbleDown(1)
-	return p, nil
+	return n, nil
 }
 
-func (h *NodeHeap) Modify(ix int, H int) {
-	// get the old K value
-	oldVal := h.PC.K[h.Arr[ix].X][h.Arr[ix].Y]
-	// set the new G
-	h.PC.H[h.Arr[ix].X][h.Arr[ix].Y] = H
-	// calculate the new K value (min of P and H)
-	var K int
-	P := h.PC.P[h.Arr[ix].X][h.Arr[ix].Y]
-	if P < H {
-		K = P
-	} else {
-		K = H
+func (h *NodeHeap) Modified(n *Node) {
+	// if less than parent, bubble up
+	parentIX := n.heapIX >> 1
+	if parentIX > 0 {
+		parent := h.Arr[parentIX]
+		if n.K < parent.K {
+			h.bubbleUp(n.heapIX)
+			return
+		}
 	}
-	// assign the new K value
-	h.PC.K[h.Arr[ix].X][h.Arr[ix].Y] = K
-	// bubble up if needed (setting HeapIX)
-	if K < oldVal {
-		h.bubbleUp(ix)
-	}
-	// bubble down if needed
-	if K > oldVal {
-		h.bubbleDown(ix)
+	// if greater than either child, bubble down
+	lix := (n.heapIX << 1)
+	rix := (n.heapIX << 1) + 1
+	for _, ix := range []int{lix, rix} {
+		if ix < len(n.Arr) {
+			child := h.Arr[ix]
+			if n.K > child.K {
+				h.bubbleDown(n.heapIX)
+				return
+			}
+		}
 	}
 }
 

@@ -7,27 +7,27 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	// "time"
+	"time"
 )
 
 func init() {
-	// rand.Seed(time.Now().UnixNano())
-	rand.Seed(0)
+	rand.Seed(time.Now().UnixNano())
 	color.NoColor = false
 }
 
 func InitSDL() (*sdl.Renderer, *ttf.Font) {
-	// init SDL
+	// init SDL systems
 	sdl.Init(sdl.INIT_EVERYTHING)
-	// init SDL TTF
 	err := ttf.Init()
 	if err != nil {
 		panic(err)
 	}
+	// get renderer
 	r, rendererError := GetRenderer()
 	if rendererError != 0 {
 		log.Fatalf("failed to build renderer (reason %d)\n", rendererError)
 	}
+	// get font
 	f, err := GetFont()
 	if err != nil {
 		log.Fatalf("couldn't load font: %v\n", err)
@@ -36,7 +36,6 @@ func InitSDL() (*sdl.Renderer, *ttf.Font) {
 }
 
 func main() {
-
 	var exitcode int
 	sdl.Main(func() {
 		r, f := InitSDL()
@@ -44,5 +43,4 @@ func main() {
 		exitcode = g.gameloop()
 	})
 	os.Exit(exitcode)
-
 }
